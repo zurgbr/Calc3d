@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-PT" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora Preço Impressão 3D</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root,[data-theme="light"]{--bg:#f7f6f2;--surface:#ffffff;--surface-2:#f1efe8;--text:#22201a;--muted:#6d6b66;--border:#ddd8cc;--primary:#01696f;--primary-hover:#0c4e54;--accent:#e7f2f1;--danger:#a13544;--radius:16px;--shadow:0 10px 30px rgba(0,0,0,.08)}
+    [data-theme="dark"]{--bg:#161513;--surface:#1f1d1a;--surface-2:#2a2724;--text:#ece8de;--muted:#a7a096;--border:#3b3732;--primary:#4f98a3;--primary-hover:#77b5be;--accent:#233536;--danger:#ff7d8d;--shadow:0 12px 32px rgba(0,0,0,.35)}
+    *{box-sizing:border-box} html,body{margin:0} body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+    .app{max-width:1100px;margin:0 auto;padding:24px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}
+    .brand{display:flex;gap:12px;align-items:center}.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--primary),#7ab9bb);display:grid;place-items:center;color:#fff;font-weight:800}
+    h1{font-size:clamp(1.8rem,2vw,2.6rem);margin:0}.sub{color:var(--muted);margin-top:4px}
+    .theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);padding:10px 14px;border-radius:999px;cursor:pointer}
+    .layout{display:grid;grid-template-columns:1.1fr .9fr;gap:24px}.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .panel{padding:22px}.tabs{display:flex;padding:8px;gap:8px;background:var(--surface-2);border-radius:20px;margin-bottom:18px}.tab{flex:1;padding:12px 14px;border-radius:14px;border:none;background:transparent;color:var(--muted);font-weight:700;cursor:pointer}.tab.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.field{display:flex;flex-direction:column;gap:8px}.field.full{grid-column:1/-1}
+    label{font-size:.95rem;font-weight:700}.hint{font-size:.82rem;color:var(--muted)} input,select{width:100%;padding:14px 14px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--text)}
+    input:focus,select:focus{outline:2px solid color-mix(in srgb, var(--primary) 35%, transparent);border-color:var(--primary)}
+    .results{display:grid;gap:12px}.metric{padding:16px;border-radius:16px;background:var(--surface-2);border:1px solid var(--border)}.metric strong{display:block;font-size:.84rem;color:var(--muted);margin-bottom:6px}.metric span{font-size:1.4rem;font-weight:800}
+    .price{background:linear-gradient(135deg,var(--primary),#4da2aa);color:#fff;border:none}.price strong{color:#d7f0f1}.price span{font-size:2rem}
+    .note{margin-top:14px;padding:14px 16px;border-radius:14px;background:var(--accent);color:var(--text);font-size:.92rem}.list{margin:8px 0 0;padding-left:18px;color:var(--muted)}
+    .hidden{display:none}.preset-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:var(--accent);font-size:.85rem;font-weight:700;color:var(--primary);margin-bottom:14px}
+    @media (max-width:860px){.layout{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.app{padding:16px}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">3D</div>
+        <div>
+          <h1>Calculadora de preço 3D</h1>
+          <div class="sub">Cálculo com material, energia, desgaste da impressora, margem e marketplace.</div>
+        </div>
+      </div>
+      <button class="theme-btn" id="themeBtn" aria-label="Alternar tema">🌙 Tema</button>
+    </div>
+
+    <div class="layout">
+      <div class="card panel">
+        <div class="tabs">
+          <button class="tab active" data-tab="calculo">Cálculo</button>
+          <button class="tab" data-tab="config">Configuração</button>
+        </div>
+
+        <section id="tab-calculo">
+          <div class="preset-badge" id="marketPresetLabel">Marketplace selecionado: Manual</div>
+          <div class="grid">
+            <div class="field full">
+              <label for="marketplace">Marketplace</label>
+              <select id="marketplace">
+                <option value="manual">Manual</option>
+                <option value="etsy">Etsy (~13% total)</option>
+                <option value="amazon-handmade">Amazon Handmade Europe (12%)</option>
+                <option value="ebay">eBay estimado (13% + 0,45€)</option>
+                <option value="allegro">Allegro estimado (11%)</option>
+                <option value="manomano">ManoMano estimado (15%)</option>
+              </select>
+              <div class="hint">O seletor aplica percentagem e custo fixo por encomenda. Em Manual, usa os valores definidos na configuração.</div>
+            </div>
+            <div class="field">
+              <label for="peso">Peso da peça (g)</label>
+              <input id="peso" type="number" min="0" step="0.1" value="150">
+            </div>
+            <div class="field">
+              <label for="horas">Horas de impressão</label>
+              <input id="horas" type="number" min="0" step="0.1" value="6">
+            </div>
+            <div class="field">
+              <label for="falha">Reserva para falhas (%)</label>
+              <input id="falha" type="number" min="0" step="0.1" value="8">
+            </div>
+            <div class="field">
+              <label for="maoobra">Mão de obra extra (€)</label>
+              <input id="maoobra" type="number" min="0" step="0.01" value="0">
+            </div>
+          </div>
+          <div class="note">Dica: se no Etsy você quiser simplificar tudo num único valor, usar ~13% é uma boa aproximação porque junta a taxa de transação e o processamento de pagamento típico na Europa.</div>
+        </section>
+
+        <section id="tab-config" class="hidden">
+          <div class="grid">
+            <div class="field">
+              <label for="margem">Margem desejada (%)</label>
+              <input id="margem" type="number" min="0" step="0.1" value="100">
+            </div>
+            <div class="field">
+              <label for="precoKg">Preço do kg do filamento (€)</label>
+              <input id="precoKg" type="number" min="0" step="0.01" value="25">
+            </div>
+            <div class="field">
+              <label for="precoKw">Preço da energia (€ / kWh)</label>
+              <input id="precoKw" type="number" min="0" step="0.001" value="0.22">
+            </div>
+            <div class="field">
+              <label for="consumo">Consumo médio da impressora (kW)</label>
+              <input id="consumo" type="number" min="0" step="0.001" value="0.15">
+            </div>
+            <div class="field">
+              <label for="extras">Embalagem e extras (€)</label>
+              <input id="extras" type="number" min="0" step="0.01" value="1.50">
+            </div>
+            <div class="field">
+              <label for="taxaMarketplace">Taxa do marketplace (%)</label>
+              <input id="taxaMarketplace" type="number" min="0" step="0.1" value="12">
+            </div>
+            <div class="field">
+              <label for="fixoMarketplace">Custo fixo do marketplace (€)</label>
+              <input id="fixoMarketplace" type="number" min="0" step="0.01" value="0.00">
+            </div>
+            <div class="field">
+              <label for="impressoraCusto">Custo da impressora (€)</label>
+              <input id="impressoraCusto" type="number" min="0" step="0.01" value="1000">
+            </div>
+            <div class="field">
+              <label for="vidaHoras">Vida útil média (horas)</label>
+              <input id="vidaHoras" type="number" min="1" step="1" value="12000">
+            </div>
+            <div class="field full">
+              <label for="obs">Perfis rápidos sugeridos</label>
+              <div class="note">
+                Etsy aproximado: 13% e 0€ fixo, Amazon Handmade Europe: 12% e 0€ fixo, eBay estimado: 13% e 0,45€ fixo.<br>
+                Ajuste manualmente quando a sua conta tiver condições diferentes.
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="card panel">
+        <div class="results">
+          <div class="metric"><strong>Custo do filamento</strong><span id="rFilamento">€0.00</span></div>
+          <div class="metric"><strong>Custo de energia</strong><span id="rEnergia">€0.00</span></div>
+          <div class="metric"><strong>Desgaste da impressora</strong><span id="rDesgaste">€0.00</span></div>
+          <div class="metric"><strong>Subtotal de custos</strong><span id="rSubtotal">€0.00</span></div>
+          <div class="metric"><strong>Taxa marketplace</strong><span id="rMarketplace">€0.00</span></div>
+          <div class="metric"><strong>Lucro / margem</strong><span id="rLucro">€0.00</span></div>
+          <div class="metric price"><strong>Preço final sugerido</strong><span id="rFinal">€0.00</span></div>
+        </div>
+        <div class="note" id="explain"></div>
+        <ul class="list">
+          <li>O custo/hora da impressora é calculado por custo da máquina dividido pela vida útil.</li>
+          <li>A taxa do marketplace pode combinar percentagem e valor fixo por encomenda.</li>
+          <li>No Etsy, usar cerca de 13% é uma aproximação prática para a Europa.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const el = id => document.getElementById(id);
+    const fields = ['peso','horas','falha','maoobra','margem','precoKg','precoKw','consumo','extras','taxaMarketplace','fixoMarketplace','impressoraCusto','vidaHoras','marketplace'];
+    const presets = {
+      'manual': {label:'Manual', percent:null, fixed:null},
+      'etsy': {label:'Etsy (~13% total)', percent:13.0, fixed:0},
+      'amazon-handmade': {label:'Amazon Handmade Europe (12%)', percent:12.0, fixed:0},
+      'ebay': {label:'eBay estimado (13% + 0,45€)', percent:13.0, fixed:0.45},
+      'allegro': {label:'Allegro estimado (11%)', percent:11.0, fixed:0},
+      'manomano': {label:'ManoMano estimado (15%)', percent:15.0, fixed:0}
+    };
+
+    function eur(v){ return new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(v||0); }
+    function num(id){ return parseFloat(el(id).value) || 0; }
+
+    function applyPreset() {
+      const preset = presets[el('marketplace').value];
+      el('marketPresetLabel').textContent = `Marketplace selecionado: ${preset.label}`;
+      if (preset.percent !== null) el('taxaMarketplace').value = preset.percent.toFixed(1);
+      if (preset.fixed !== null) el('fixoMarketplace').value = preset.fixed.toFixed(2);
+      calculate();
+    }
+
+    function calculate() {
+      const peso = num('peso');
+      const horas = num('horas');
+      const falha = num('falha') / 100;
+      const maoobra = num('maoobra');
+      const margem = num('margem') / 100;
+      const precoKg = num('precoKg');
+      const precoKw = num('precoKw');
+      const consumo = num('consumo');
+      const extras = num('extras');
+      const taxaMarketplace = num('taxaMarketplace') / 100;
+      const fixoMarketplace = num('fixoMarketplace');
+      const impressoraCusto = num('impressoraCusto');
+      const vidaHoras = Math.max(num('vidaHoras'), 1);
+
+      const custoFilamento = (peso / 1000) * precoKg;
+      const custoEnergia = horas * consumo * precoKw;
+      const custoHoraImpressora = impressoraCusto / vidaHoras;
+      const desgaste = horas * custoHoraImpressora;
+      const base = custoFilamento + custoEnergia + desgaste + extras + maoobra;
+      const subtotal = base * (1 + falha);
+      const lucro = subtotal * margem;
+      const precoAntesTaxa = subtotal + lucro;
+      const taxaValor = precoAntesTaxa * taxaMarketplace + fixoMarketplace;
+      const final = precoAntesTaxa + taxaValor;
+
+      el('rFilamento').textContent = eur(custoFilamento);
+      el('rEnergia').textContent = eur(custoEnergia);
+      el('rDesgaste').textContent = eur(desgaste);
+      el('rSubtotal').textContent = eur(subtotal);
+      el('rMarketplace').textContent = eur(taxaValor);
+      el('rLucro').textContent = eur(lucro);
+      el('rFinal').textContent = eur(final);
+      el('explain').innerHTML = `Custo/hora da impressora: <strong>${eur(custoHoraImpressora)}</strong>. Marketplace aplicado: <strong>${(taxaMarketplace*100).toFixed(1)}%</strong> + <strong>${eur(fixoMarketplace)}</strong> fixo por encomenda.`;
+    }
+
+    document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      el('tab-calculo').classList.toggle('hidden', tab !== 'calculo');
+      el('tab-config').classList.toggle('hidden', tab !== 'config');
+    }));
+
+    fields.forEach(id => el(id).addEventListener('input', calculate));
+    el('marketplace').addEventListener('change', applyPreset);
+    el('themeBtn').addEventListener('click', () => {
+      const root = document.documentElement;
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+    });
+
+    applyPreset();
+    calculate();
+  </script>
+</body>
+</html>
