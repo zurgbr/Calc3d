@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de Preço de Impressão 3D</title>
+  <style>
+    :root{--bg:#f7f6f2;--card:#ffffff;--muted:#666;--line:#ddd;--pri:#0b6b73;--pri2:#0f8590;--txt:#222;--ok:#2e7d32}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Arial,sans-serif;background:var(--bg);color:var(--txt)}
+    .wrap{max-width:1100px;margin:0 auto;padding:20px}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+    h1{margin:0;font-size:clamp(1.4rem,2vw,2rem)} .sub{color:var(--muted);font-size:.95rem}
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.05);overflow:hidden}
+    .tabs{display:flex;gap:8px;padding:12px;border-bottom:1px solid var(--line);background:#faf8f4;flex-wrap:wrap}
+    .tab{padding:10px 14px;border:1px solid var(--line);background:#fff;border-radius:999px;cursor:pointer;font-weight:700}
+    .tab.active{background:var(--pri);color:#fff;border-color:var(--pri)}
+    .panel{padding:16px}
+    .hidden{display:none}
+    .fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field.full{grid-column:1/-1}
+    label{font-weight:700;font-size:.95rem}
+    small{color:var(--muted)}
+    input,select{min-height:44px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;background:#fff;color:#111}
+    input:focus,select:focus{outline:2px solid rgba(11,107,115,.15);border-color:var(--pri);color:#111}
+    .result{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border-radius:16px;padding:16px}
+    .result .big{font-size:2rem;font-weight:800;line-height:1.1;margin:8px 0}
+    .resgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+    .mini{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;color:var(--txt)}
+    .mini b{display:block;color:var(--muted);font-size:.82rem;margin-bottom:6px}
+    .note{margin-top:14px;background:#f4fbfb;border:1px solid #d7efef;border-radius:14px;padding:12px}
+    details{margin-top:10px;border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
+    summary{cursor:pointer;list-style:none;padding:12px 14px;font-weight:800;background:#fafafa}
+    summary::-webkit-details-marker{display:none}
+    .break{padding:12px 14px;border-top:1px solid var(--line);display:grid;gap:8px}
+    .row{display:flex;justify-content:space-between;gap:12px}
+    .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#edf8f8;color:var(--pri);font-weight:700;font-size:.82rem}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}.fields{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Calculadora de Preço de Impressão 3D</h1>
+        <div class="sub">Peso total da impressão, embalagem opcional e detalhamento recolhível.</div>
+      </div>
+      <span class="pill">Versão funcional</span>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <div class="tabs">
+          <button class="tab active" data-tab="calc">Cálculo</button>
+          <button class="tab" data-tab="config">Configuração</button>
+        </div>
+
+        <div class="panel" id="calcView">
+          <div class="fields">
+            <div class="field full">
+              <label for="marketplace">Marketplace</label>
+              <select id="marketplace">
+                <option value="sem">Sem marketplace / venda direta</option>
+                <option value="consignado">Consignado</option>
+                <option value="etsy">Etsy (~13%)</option>
+                <option value="amazon">Amazon Handmade (12%)</option>
+                <option value="ebay">eBay (13% + 0,45€)</option>
+                <option value="manual">Manual</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="weight">Peso total da impressão (gramas)</label>
+              <input id="weight" type="number" min="0" step="0.1" value="120" />
+            </div>
+            <div class="field">
+              <label for="hours">Horas de impressão</label>
+              <input id="hours" type="number" min="0" step="0.1" value="5.5" />
+            </div>
+            <div class="field">
+              <label for="pieces">Quantidade de peças</label>
+              <input id="pieces" type="number" min="1" step="1" value="1" />
+            </div>
+            <div class="field">
+              <label for="failure">Reserva de falha (%)</label>
+              <input id="failure" type="number" min="0" step="0.1" value="5" />
+            </div>
+          </div>
+          <details>
+            <summary>Detalhamento do cálculo</summary>
+            <div class="break">
+              <div class="row"><span>Filamento</span><strong id="dFilament">€0,00</strong></div>
+              <div class="row"><span>Energia</span><strong id="dEnergy">€0,00</strong></div>
+              <div class="row"><span>Desgaste da impressora</span><strong id="dMachine">€0,00</strong></div>
+              <div class="row"><span>Embalagem</span><strong id="dPackaging">€0,00</strong></div>
+              <div class="row"><span>Falhas / testes</span><strong id="dFailure">€0,00</strong></div>
+              <div class="row"><span>Subtotal</span><strong id="dSubtotal">€0,00</strong></div>
+              <div class="row"><span>Margem</span><strong id="dMargin">€0,00</strong></div>
+              <div class="row"><span>Marketplace</span><strong id="dMarketplace">€0,00</strong></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="panel hidden" id="configView">
+          <div class="fields">
+            <div class="field">
+              <label for="filamentKg">Preço do kg do filamento (€)</label>
+              <input id="filamentKg" type="number" min="0" step="0.01" value="25" />
+            </div>
+            <div class="field">
+              <label for="kwh">Preço do kW (€)</label>
+              <input id="kwh" type="number" min="0" step="0.001" value="0.22" />
+            </div>
+            <div class="field">
+              <label for="power">Consumo médio da impressora (W)</label>
+              <input id="power" type="number" min="0" step="1" value="150" />
+            </div>
+            <div class="field">
+              <label for="printerCost">Custo da impressora (€)</label>
+              <input id="printerCost" type="number" min="0" step="0.01" value="1000" />
+            </div>
+            <div class="field">
+              <label for="printerLife">Vida útil média (horas)</label>
+              <input id="printerLife" type="number" min="1" step="1" value="12000" />
+            </div>
+            <div class="field">
+              <label for="margin">Margem desejada (%)</label>
+              <input id="margin" type="number" min="0" step="0.1" value="100" />
+            </div>
+            <div class="field">
+              <label for="packaging">Embalagem por encomenda (€)</label>
+              <input id="packaging" type="number" min="0" step="0.01" value="1.50" />
+            </div>
+            <div class="field">
+              <label><input type="checkbox" id="applyPackaging" checked /> Aplicar embalagem</label>
+            </div>
+            <div class="field">
+              <label for="marketFee">Taxa do marketplace (%)</label>
+              <input id="marketFee" type="number" min="0" step="0.1" value="0" />
+            </div>
+            <div class="field">
+              <label for="marketFixed">Taxa fixa do marketplace (€)</label>
+              <input id="marketFixed" type="number" min="0" step="0.01" value="0" />
+            </div>
+            <div class="field">
+              <label for="consignadoRate">Consignado: % da margem normal</label>
+              <input id="consignadoRate" type="number" min="0" step="1" value="75" />
+            </div>
+          </div>
+          <div class="note">
+            O cálculo considera: filamento, energia, desgaste da impressora, embalagem opcional, reserva de falha, margem e taxas do marketplace.
+          </div>
+        </div>
+      </section>
+
+      <aside class="card panel">
+        <div class="result">
+          <div class="pill" id="marketLabel">Sem marketplace / venda direta</div>
+          <div class="big" id="finalPrice">€0,00</div>
+          <div id="summary">Preencha os dados para calcular.</div>
+        </div>
+        <div class="resgrid">
+          <div class="mini"><b>Preço por peça</b><span id="perPiece">€0,00</span></div>
+          <div class="mini"><b>Subtotal</b><span id="subtotalView">€0,00</span></div>
+          <div class="mini"><b>Marketplace total</b><span id="marketTotal">€0,00</span></div>
+          <div class="mini"><b>Margem usada</b><span id="marginUsed">0%</span></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = v => new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(Number(v)||0);
+const presets = {
+  sem: {fee:0, fixed:0, label:'Sem marketplace / venda direta', factor:1},
+  consignado: {fee:0, fixed:0, label:'Consignado', factor:0.75},
+  etsy: {fee:13, fixed:0, label:'Etsy (~13%)', factor:1},
+  amazon: {fee:12, fixed:0, label:'Amazon Handmade (12%)', factor:1},
+  ebay: {fee:13, fixed:0.45, label:'eBay (13% + 0,45€)', factor:1},
+  manual: {fee:null, fixed:null, label:'Manual', factor:1}
+};
+function setView(v){$('calcView').classList.toggle('hidden',v!=='calc');$('configView').classList.toggle('hidden',v!=='config');document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===v));}
+function calc(){
+  const weight=+$('weight').value||0;
+  const hours=+$('hours').value||0;
+  const pieces=Math.max(1,+$('pieces').value||1);
+  const failure=+$('failure').value||0;
+  const kg=+$('filamentKg').value||0;
+  const kwh=+$('kwh').value||0;
+  const powerW=+$('power').value||0;
+  const printerCost=+$('printerCost').value||0;
+  const printerLife=Math.max(1,+$('printerLife').value||1);
+  const marginBase=(+$('margin').value||0)/100;
+  const pack=+$('packaging').value||0;
+  const applyPackaging=$('applyPackaging').checked;
+  const marketPreset=presets[$('marketplace').value]||presets.sem;
+  $('marketLabel').textContent=marketPreset.label;
+  const marketFee = $('marketplace').value==='manual' ? (+$('marketFee').value||0) : marketPreset.fee;
+  const marketFixed = $('marketplace').value==='manual' ? (+$('marketFixed').value||0) : marketPreset.fixed;
+  const margin = marginBase * (marketPreset.factor || 1);
+  const filament = (weight/1000)*kg;
+  const energy = hours*(powerW/1000)*kwh;
+  const machine = hours*(printerCost/printerLife);
+  const packaging = applyPackaging ? pack : 0;
+  const base = filament + energy + machine + packaging;
+  const fail = base*(failure/100);
+  const subtotal = base + fail;
+  const marginValue = subtotal*margin;
+  const beforeMarket = subtotal + marginValue;
+  const marketValue = beforeMarket*(marketFee/100) + marketFixed;
+  const final = beforeMarket + marketValue;
+  $('finalPrice').textContent=fmt(final);
+  $('subtotalView').textContent=fmt(subtotal);
+  $('marketTotal').textContent=fmt(marketValue);
+  $('marginUsed').textContent=(margin*100).toFixed(1)+'%';
+  $('perPiece').textContent=fmt(final/pieces);
+  $('summary').textContent=`${pieces} peça(s), ${weight.toFixed(1)} g total, ${hours.toFixed(1)} h.`;
+  $('dFilament').textContent=fmt(filament);
+  $('dEnergy').textContent=fmt(energy);
+  $('dMachine').textContent=fmt(machine);
+  $('dPackaging').textContent=fmt(packaging);
+  $('dFailure').textContent=fmt(fail);
+  $('dSubtotal').textContent=fmt(subtotal);
+  $('dMargin').textContent=fmt(marginValue);
+  $('dMarketplace').textContent=fmt(marketValue);
+}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.tab)));
+['weight','hours','pieces','failure','filamentKg','kwh','power','printerCost','printerLife','margin','packaging','marketFee','marketFixed','consignadoRate','applyPackaging','marketplace'].forEach(id=>$(id).addEventListener('input',calc));
+setView('calc');
+calc();
+</script>
+</body>
+</html>
